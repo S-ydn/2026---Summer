@@ -4,7 +4,7 @@
 충북대학교 학생을 위한 학사/생활 정보 AI 에이전트
 - 학사일정을 PDF 기반으로 정확하게 안내
 - 학교 근처 맛집(식사 메뉴 선정 도움), 공모전/학부 공지 등 웹 기반 정보 제공
-- 날씨 안내를 통해 외출 준비를 돕습니다
+- 날씨 안내를 통해 외출 준비를 도움
 
 ### 사용 시나리오 예시
 1. "휴학 신청 기간이 언제야?" -> RAG로 schedule.pdf에서 정확한 날짜 검색
@@ -13,8 +13,9 @@
 4. "기말고사까지 며칠 남았어?" -> RAG로 날짜 찾고 dday_calculator로 정확히 계산
 
 ## 2. 전체 아키텍처 설명
-
-( 다이어그램 )
+<img width="1040" height="1387" alt="agent_workflow" src="https://github.com/user-attachments/assets/7958a7bc-8f39-4e5d-96bd-717d87bd400b" />
+LangGraph의 StateGraph로 구성되며, 
+사용자의 질문 하나당 아래 순서대로 그래프 실행.
 
 ### 그래프 흐름 요약
 - **validate_input**: 입력 검증 및 로깅 미들웨어
@@ -60,7 +61,7 @@ uvicorn server:app --reload
 ### Memory
 - SqliteSaver + thread_id로 멀티턴 대화 유지
 - 매 턴 current_query를 별도 필드로 저장해, 누적된 messages 전체가 아닌 "이번 질문"만 정확히 참조하도록 처리
-- 대화 초기화시 새 스레드로 판단하여 다른 스레드에서의 대화는 기억하지 않음
+- 대화 초기화시 thread_id의 체크포인트 기록을 삭제(delete_thread)
 
 ### Middleware
 - logging_guardrail_middleware: 함수 기반 미들웨어로, 사용자 입력 로깅 및 금칙어 필터링
