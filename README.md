@@ -76,7 +76,7 @@ uvicorn server:app --reload
 
 ## 6. 외부 오픈소스 활용 내역
 
-해당 에이전트는 아래 오픈소스 라이브러리를 의존성으로 사용하였습니다. 
+해당 에이전트는 아래 오픈소스 라이브러리를 의존성으로 사용함. 
 (모두 pip 패키지로 설치하며, requirements.txt에 명시함)
 - LangChain / LangGraph : langchain, langchain-core, langchain-openai, 
   langchain-chroma, langchain-tavily, langchain-community, langgraph, 
