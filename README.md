@@ -30,16 +30,16 @@
 ## 3. 설치 및 실행 방법
 pip install -r requirements.txt
 
-## .env 파일에 아래 키 설정
-### OPENAI_API_KEY= 
-### TAVILY_API_KEY=
-### OPENWEATHER_API_KEY=
-### 각 키 값은 개신누리 과제에 제출한 결과 보고서 참고
+### .env 파일에 아래 키 설정
+OPENAI_API_KEY= 
+TAVILY_API_KEY=
+OPENWEATHER_API_KEY=
+각 키 값은 개신누리 과제에 제출한 결과 보고서 참고
 
-# 1) 학사일정 PDF 임베딩 (최초 1회, PDF 갱신 시 재실행)
+### 1) 학사일정 PDF 임베딩 (최초 1회, PDF 갱신 시 재실행)
 python ingest.py
 
-# 2) 서버 실행
+### 2) 서버 실행
 uvicorn server:app --reload
 \`\`\`
 
