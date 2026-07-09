@@ -73,3 +73,15 @@ uvicorn server:app --reload
 | 웹검색 기반 정보(공모전, 학부 공지)의 정확도 한계 : 범용 검색이라 공식 게시판 글이 아닌 나무위키/유튜브 등이 걸릴 수 있음 | 학부 홈페이지 URL을 직접 크롤링하는 전용 tool 추가 검토 |
 | 대화 맥락 의존 질문의 불안정성 : "여름말고" 같은 생략형 질문은 최근 대화 일부를 프롬프트에 포함해 개선했으나, 완벽히 보장되지는 않음 | 검색 전에 맥락을 반영한 완전한 질문으로 변환 |
 | fallback_search 트리거 조건의 느슨함 : Chroma retriever가 유사도 낮아도 k개를 반환하는 특성상, RAG 관련성 체크가 "문서 존재 여부"만으로 판단되어 정교하지 않음 | LLM 기반으로 관련도를 판단하는 단계 추가 |
+
+## 6. 외부 오픈소스 활용 내역
+
+해당 에이전트는 아래 오픈소스 라이브러리를 의존성으로 사용하였습니다. 
+(모두 pip 패키지로 설치하며, requirements.txt에 명시함)
+- LangChain / LangGraph : langchain, langchain-core, langchain-openai, 
+  langchain-chroma, langchain-tavily, langchain-community, langgraph, 
+  langgraph-checkpoint-sqlite
+- 벡터 DB: chromadb
+- 웹 서버: fastapi, uvicorn
+- 기타: pydantic, python-dotenv, requests
+
