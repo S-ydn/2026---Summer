@@ -39,7 +39,6 @@ python ingest.py
 
 ### 2) 서버 실행
 uvicorn server:app --reload
-\`\`\`
 
 ## 4. 사용된 Tool / RAG / Memory / Middleware 설명
 
