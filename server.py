@@ -300,7 +300,6 @@ def rag_node(state: GraphState) -> dict:
 
     if relevant:
         # 이번 질문 직전까지의 최근 대화 몇 개를 맥락으로 함께 제공
-        # (예: "신청기간은?"같은 생략/대명사형 질문 대응)
         prior_msgs = state["messages"][:-1][-6:]
         history_snippet = "\n".join(
             f"{getattr(m, 'type', m.get('role', '') if isinstance(m, dict) else '')}: "
@@ -315,7 +314,7 @@ def rag_node(state: GraphState) -> dict:
     return {"messages": new_msgs, "rag_relevant": relevant, "rag_sources": sources}
 
 
-# 관련성 체크 -> 반복(loop): 부족하면 웹검색 폴백 
+# 관련성 체크 -> loop: 부족하면 웹검색 fallback
 def check_relevance(state: GraphState) -> Literal["fallback_search", "structured_output_node"]:
     if not state["rag_relevant"] and state["retry_count"] < 1:
         return "fallback_search"
@@ -333,8 +332,8 @@ def fallback_search(state: GraphState) -> dict:
     }
 
 
-# Tool Agent 노드 (날씨 / 웹검색 / 식당추천 / RAG / D-day 자율로 선택)
-# LLM이 tool_calls를 반환 -> tool_node에서 실제 실행 -> 다시 이 노드로 돌아옴 (반복/loop)
+# Tool Agent 노드 (날씨 / 웹검색 / 식당추천 / RAG / D-day 중에 자율로 선택)
+# LLM이 tool_calls를 반환 -> tool_node에서 실제 실행 -> 다시 이 노드로 돌아옴 (loop)
 def tool_agent_node(state: GraphState) -> dict:
     today_str = datetime.now().strftime("%Y-%m-%d")
     system_prompt = (
@@ -402,7 +401,7 @@ def tool_execution_node(state: GraphState) -> dict:
 
     update = {"messages": tool_results}
     if used_web_search:
-        # RAG fallback_search와 동일한 방식으로 "출처" 표시
+        # RAG fallback_search와 동일한 방식으로 출처 표시
         update["rag_sources"] = [{"source": "웹 검색(Tavily) - 참고용, 공식 정보 재확인 권장", "page": "-"}]
     return update
 
