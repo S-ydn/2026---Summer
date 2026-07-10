@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic
+langchain-core
+langchain-google-genai
+langchain-chroma
+langchain-tavily
+langchain-community
+langchain-text-splitters
+requests
+langgraph
+langgraph-checkpoint-sqlite

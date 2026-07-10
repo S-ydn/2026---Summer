@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Campus Briefing Agent</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <style>
+        body {
+            background-color: #fbf9f8;
+            font-family: 'Hanken Grotesk', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            height: calc(100vh - 64px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scroll-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scroll-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes pulse-soft {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(0.98);
+            }
+        }
+
+        .pulse-active {
+            animation: pulse-soft 2s infinite ease-in-out;
+        }
+
+        .ai-bubble-border {
+            border-left: 4px solid #e4dfff;
+        }
+
+        .input-glow:focus-within {
+            box-shadow: 0 0 0 2px rgba(89, 80, 182, 0.1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body class="text-on-surface" style="background:#fbf9f8;">
+    <header
+        class="bg-surface border-b border-outline-variant flex justify-between items-center w-full px-6 h-16 sticky top-0 z-50"
+        style="background:#fbf9f8; border-color:#e4e2e2;">
+        <div class="flex items-center gap-4">
+            <h1 class="font-bold" style="color:#5950b6; font-size:20px;">Campus Agent</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <button class="p-2 rounded-full hover:bg-gray-100 transition-colors" id="reset-btn" title="대화 초기화">
+                <span class="material-symbols-outlined" style="color:#474552;">restart_alt</span>
+            </button>
+        </div>
+    </header>
+    <main class="chat-container px-6">
+        <div class="hidden py-4 flex flex-col items-center gap-2" id="sse-status">
+            <div class="w-48 h-1 rounded-full overflow-hidden" style="background:#e4e2e2;">
+                <div class="h-full" id="sse-bar"
+                    style="background:linear-gradient(to right,#ade1fe,#9d94ff); width:60%;"></div>
+            </div>
+            <span class="italic" id="status-text"
+                style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#787583;">질문 분류 중...</span>
+        </div>
+        <div class="flex-1 overflow-y-auto scroll-hide py-2 space-y-6" id="message-flow">
+            <div class="flex flex-col items-start max-w-[95%]">
+                <div class="p-4 rounded-xl shadow-sm border ai-bubble-border"
+                    style="background:#ffffff; border-color:rgba(200,196,212,0.3);">
+                    <p style="font-size:16px;">안녕하세요! 캠퍼스 AI 에이전트입니다. 오늘의 날씨, 학사 일정, 학교 근처 맛집 등에 대해 무엇이든 물어보세요.</p>
+                </div>
+            </div>
+        </div>
+        <div class="pb-6 pt-2" style="background:linear-gradient(to top,#fbf9f8,#fbf9f8,transparent);">
+            <div class="flex flex-wrap gap-2 mb-4 justify-center">
+                <button class="px-4 py-2 rounded-full border font-medium transition-colors"
+                    style="border-color:#e4dfff; background:#ffffff; color:#5950b6; font-size:14px;"
+                    onclick="appendUserMessage('오늘 날씨 어때?')">오늘 날씨 어때?</button>
+                <button class="px-4 py-2 rounded-full border font-medium transition-colors"
+                    style="border-color:#e4dfff; background:#ffffff; color:#5950b6; font-size:14px;"
+                    onclick="appendUserMessage('학교 근처 맛집 추천')">학교 근처 맛집 추천</button>
+                <button class="px-4 py-2 rounded-full border font-medium transition-colors"
+                    style="border-color:#e4dfff; background:#ffffff; color:#5950b6; font-size:14px;"
+                    onclick="appendUserMessage('휴학 신청 기간')">휴학 신청 기간</button>
+            </div>
+            <div class="relative max-w-[800px] mx-auto input-glow group rounded-full">
+                <div class="flex items-center rounded-full px-4 py-2 shadow-sm border transition-all"
+                    style="background:#ffffff; border-color:#c8c4d4;">
+                    <input class="flex-1 bg-transparent border-none focus:ring-0 px-2" id="chat-input"
+                        placeholder="학사 일정 등 궁금한 점을 물어보세요..." type="text" style="font-size:16px; outline:none;" />
+                    <button class="p-2 rounded-full transition-all" id="send-btn" onclick="handleSend()"
+                        style="color:#5950b6;">
+                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="border-t" style="background:#ffffff; border-color:#e4e2e2;">
+        <div
+            class="max-w-[800px] mx-auto w-full py-8 px-6 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#5c5f60;">© 2024 University Campus
+                Briefing AI</div>
+        </div>
+    </footer>
+    <script>
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const messageFlow = document.getElementById('message-flow');
+        const sseStatus = document.getElementById('sse-status');
+        const statusText = document.getElementById('status-text');
+
+        // 페이지 로드 시 1회 생성되는 대화 세션 ID (server.py의 thread_id)
+        const threadId = 'web-' + Math.random().toString(36).slice(2, 10);
+
+        // 현재 요청의 시작 시각 (응답 소요 시간 계산용)
+        let requestStartTime = null;
+
+        function categoryLabel(category) {
+            if (category === 'academic') return '학사일정';
+            if (category === 'restaurant') return '식당추천';
+            if (category === 'realtime') return '실시간정보';
+            return null;
+        }
+
+        // 소요 시간(ms)을 "1.2s" / "850ms" 같은 표기로 변환
+        function formatElapsed(ms) {
+            if (ms < 1000) return `${Math.round(ms)}ms`;
+            return `${(ms / 1000).toFixed(1)}s`;
+        }
+
+        function appendUserMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'flex flex-col items-end w-full animate-fade-in-up';
+            div.innerHTML = `<div class="p-4 rounded-xl shadow-sm max-w-[85%]" style="background:#e4dfff; color:#32258d;"><p style="font-size:16px;"></p></div>`;
+            div.querySelector('p').textContent = text;
+            messageFlow.appendChild(div);
+            messageFlow.scrollTop = messageFlow.scrollHeight;
+            sendToServer(text);
+        }
+
+        function appendAiMessage({ answer, category, rag_sources, elapsedMs }) {
+            const label = categoryLabel(category);
+            const chipHtml = label
+                ? `<span class="inline-block mb-2 px-2 py-0.5 rounded-full" style="background:#e4dfff; color:#32258d; font-family:'JetBrains Mono',monospace; font-size:11px;">${label}</span>`
+                : '';
+
+            const timeHtml = (typeof elapsedMs === 'number')
+                ? `<div class="elapsed-time" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#a8a5b0; margin-bottom:4px;"></div>`
+                : '';
+
+            let sourcesHtml = '';
+            if (rag_sources && rag_sources.length) {
+                sourcesHtml = `
+                    <div class="flex items-center gap-1 mt-2" style="opacity:0.6;">
+                        <span class="material-symbols-outlined" style="font-size:14px;">description</span>
+                        <span class="source-label" style="font-family:'JetBrains Mono',monospace; font-size:12px;"></span>
+                    </div>
+                `;
+            }
+
+            const div = document.createElement('div');
+            div.className = 'flex flex-col items-start max-w-[95%] animate-fade-in-up';
+            div.innerHTML = `
+                <div class="p-4 rounded-xl shadow-sm border ai-bubble-border" style="background:#ffffff; border-color:rgba(200,196,212,0.3);">
+                    ${timeHtml}
+                    ${chipHtml}
+                    <p class="answer-text mb-2" style="font-size:16px;"></p>
+                    ${sourcesHtml}
+                </div>
+            `;
+            div.querySelector('.answer-text').textContent = answer || '(응답 없음)';
+            div.querySelector('.answer-text').style.whiteSpace = 'pre-line';
+
+            if (typeof elapsedMs === 'number') {
+                div.querySelector('.elapsed-time').textContent = formatElapsed(elapsedMs);
+            }
+
+            if (rag_sources && rag_sources.length) {
+                const first = rag_sources[0];
+                const sourceLabel = (first.page && first.page !== '-')
+                    ? `출처: ${first.source} ${first.page}페이지`
+                    : `출처: ${first.source}`;
+                div.querySelector('.source-label').textContent = sourceLabel;
+            }
+
+            messageFlow.appendChild(div);
+            messageFlow.scrollTop = messageFlow.scrollHeight;
+        }
+
+        function appendErrorMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'flex justify-center w-full py-4 animate-fade-in-up';
+            div.innerHTML = `
+                <div class="px-6 py-4 rounded-xl flex items-center gap-4 max-w-lg border" style="background:rgba(255,218,214,0.3); border-color:rgba(186,26,26,0.2);">
+                    <span class="material-symbols-outlined" style="color:#ba1a1a; font-variation-settings: 'FILL' 1;">warning</span>
+                    <div class="flex flex-col">
+                        <span class="font-bold" style="font-size:14px; color:#ba1a1a;">요청을 처리할 수 없습니다</span>
+                        <span class="error-text" style="font-size:14px; color:#93000a;"></span>
+                    </div>
+                </div>
+            `;
+            div.querySelector('.error-text').textContent = message;
+            messageFlow.appendChild(div);
+            messageFlow.scrollTop = messageFlow.scrollHeight;
+        }
+
+        function handleSend() {
+            const text = chatInput.value.trim();
+            if (text) {
+                appendUserMessage(text);
+                chatInput.value = '';
+            }
+        }
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+
+        // ── 서버(SSE) 연동 ──
+        function sendToServer(message) {
+            sendBtn.disabled = true;
+            sseStatus.classList.remove('hidden');
+            statusText.innerText = '요청 전송 중...';
+
+            // 요청 시작 시각 기록 (응답 도착 시 elapsed time 계산용)
+            requestStartTime = performance.now();
+
+            const url = `/api/chat/stream?message=${encodeURIComponent(message)}&thread_id=${encodeURIComponent(threadId)}`;
+            const es = new EventSource(url);
+
+            es.onmessage = (e) => {
+                let data;
+                try {
+                    data = JSON.parse(e.data);
+                } catch (err) {
+                    return;
+                }
+
+                if (data.type === 'node') {
+                    statusText.innerText = data.desc || `${data.name} 실행 중...`;
+                }
+
+                if (data.type === 'answer') {
+                    sseStatus.classList.add('hidden');
+                    const elapsedMs = requestStartTime !== null ? (performance.now() - requestStartTime) : null;
+                    appendAiMessage({ answer: data.content, category: data.category, rag_sources: data.rag_sources, elapsedMs });
+                    requestStartTime = null;
+                }
+
+                if (data.type === 'error') {
+                    sseStatus.classList.add('hidden');
+                    appendErrorMessage(data.message || '알 수 없는 오류가 발생했습니다.');
+                    requestStartTime = null;
+                }
+
+                if (data.type === 'done') {
+                    es.close();
+                    sendBtn.disabled = false;
+                }
+            };
+
+            es.onerror = () => {
+                sseStatus.classList.add('hidden');
+                appendErrorMessage('서버에 연결할 수 없습니다. server.py가 실행 중인지 확인하세요.');
+                es.close();
+                sendBtn.disabled = false;
+                requestStartTime = null;
+            };
+        }
+
+        // ── 대화 초기화 ──
+        resetBtn.addEventListener('click', async () => {
+            resetBtn.disabled = true;
+            try {
+                const res = await fetch('/api/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: '', thread_id: threadId }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    messageFlow.innerHTML = `
+                        <div class="flex flex-col items-start max-w-[95%]">
+                            <div class="p-4 rounded-xl shadow-sm border ai-bubble-border" style="background:#ffffff; border-color:rgba(200,196,212,0.3);">
+                                <p style="font-size:16px;">대화가 초기화되었습니다. 다시 질문해주세요.</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    appendErrorMessage(data.error || '초기화에 실패했습니다.');
+                }
+            } catch (err) {
+                appendErrorMessage('서버에 연결할 수 없습니다.');
+            } finally {
+                resetBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

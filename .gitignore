@@ -1,0 +1,16 @@
+# 환경변수 (API 키 등 민감정보)
+.env
+
+# 파이썬 캐시
+__pycache__/
+*.pyc
+
+# 벡터 DB (ingest.py 실행 시 재생성됨)
+chroma_db/
+
+# 대화 메모리 DB (실행 시 자동 생성됨)
+chat_memory
+chat_memory.db
+*.db
+*.sqlite
+*.sqlite3
