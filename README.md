@@ -54,7 +54,7 @@ uvicorn server:app --reload
 ### RAG
 - PDF: schedule.pdf (학사일정) → RecursiveCharacterTextSplitter(chunk_size=500, overlap=100)
 - Embedding: OpenAI text-embedding-3-small
-- Vector DB: Chroma (collection: academic_calendar), retriever k=8
+- Vector DB: Chroma (collection: pdf_collection), retriever k=8
 - 검색된 chunk를 그대로 노출하지 않고, LLM이 질문/대화 맥락에 맞춰 재요약 후 응답
 
 ### Memory
