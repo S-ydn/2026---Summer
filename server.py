@@ -12,7 +12,7 @@ import json
 import os
 import sqlite3
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TypedDict, Annotated, Literal, Optional
 
 from dotenv import load_dotenv
@@ -74,6 +74,9 @@ academic_prompt = ChatPromptTemplate.from_template(
 
 답변 규칙:
 - 질문과 직접 관련된 일정만 언급하고, 관련 없는 다른 달/다른 항목은 언급하지 마세요.
+- 검색된 내용 중 질문에 실제로 답할 수 있는 부분이 없다면, 억지로 관련 있어 보이는 
+  다른 항목을 끌어다 답하지 말고 "학사일정 문서에서 관련 정보를 찾을 수 없습니다"라고 
+  명확히 답하세요.
 - 질문에 '여름'/'겨울'이나 특정 학기처럼 범위가 명시되지 않았다면, 관련된 하위 항목(예: 하계·동계 계절수업, 1차·2차 신청기간 등)을 빠짐없이 모두 안내하세요.
 - 대화 맥락상 이전에 언급된 대상(예: '그거', '신청기간은?')이 무엇을 가리키는지 파악해서 답하세요.
 - 마크다운 문법(**, #, -) 없이 순수 텍스트로 간결하게 답하세요."""
@@ -104,14 +107,34 @@ def rag_search(query: str) -> str:
 
 #  2. Tool 정의 (날씨 / 웹검색 / 식당추천 / D-day 계산)
 @tool
-def weather_search(city: str) -> str:
-    """도시의 현재 날씨(기온, 습도, 상태)를 조회합니다.
+def weather_search(city: str, day_offset: int = 0) -> str:
+    """도시의 날씨를 조회합니다.
     Args:
         city: 날씨를 조회할 도시의 '영문' 이름 (예: Cheongju, Seoul).
               반드시 영문 지명으로 변환해서 전달해야 합니다.
+        day_offset: 오늘 기준 며칠 뒤인지 (0=오늘, 1=내일, 2=모레). 기본값 0.
     """
     api_key = os.getenv("OPENWEATHER_API_KEY")
-    url = "https://api.openweathermap.org/data/2.5/weather"
+
+    if day_offset == 0:
+        # 오늘은 현재 날씨 API 그대로 사용
+        url = "https://api.openweathermap.org/data/2.5/weather"
+        params = {"q": f"{city},KR", "appid": api_key, "units": "metric", "lang": "kr"}
+        try:
+            res = requests.get(url, params=params, timeout=5)
+            if res.status_code == 404:
+                return f"'{city}' 지명을 찾을 수 없습니다. 지원되지 않는 지역이거나 지명 표기가 다를 수 있습니다."
+            res.raise_for_status()
+            data = res.json()
+            desc = data["weather"][0]["description"]
+            temp = data["main"]["temp"]
+            humidity = data["main"]["humidity"]
+            return f"{city} 오늘 날씨: {desc}, 기온 {temp}°C, 습도 {humidity}%"
+        except Exception as e:
+            return f"날씨 조회 실패: {e}"
+
+    # 내일/모레는 Forecast API 사용 (3시간 간격 예보, 최대 5일치)
+    url = "https://api.openweathermap.org/data/2.5/forecast"
     params = {"q": f"{city},KR", "appid": api_key, "units": "metric", "lang": "kr"}
     try:
         res = requests.get(url, params=params, timeout=5)
@@ -119,12 +142,30 @@ def weather_search(city: str) -> str:
             return f"'{city}' 지명을 찾을 수 없습니다. 지원되지 않는 지역이거나 지명 표기가 다를 수 있습니다."
         res.raise_for_status()
         data = res.json()
-        desc = data["weather"][0]["description"]
-        temp = data["main"]["temp"]
-        humidity = data["main"]["humidity"]
-        return f"{city} 날씨: {desc}, 기온 {temp}°C, 습도 {humidity}%"
+
+        target_date = (datetime.now() + timedelta(days=day_offset)).date()
+        # 목표 날짜의 정오(12:00) 근처 예보를 대표값으로 사용
+        candidates = [
+            item for item in data["list"]
+            if datetime.strptime(item["dt_txt"], "%Y-%m-%d %H:%M:%S").date() == target_date
+        ]
+        if not candidates:
+            return f"{target_date} 날씨 예보를 찾을 수 없습니다 (5일 이내 예보만 제공됩니다)."
+
+        # 정오에 가장 가까운 예보 선택
+        best = min(
+            candidates,
+            key=lambda item: abs(
+                datetime.strptime(item["dt_txt"], "%Y-%m-%d %H:%M:%S").hour - 12
+            )
+        )
+        desc = best["weather"][0]["description"]
+        temp = best["main"]["temp"]
+        humidity = best["main"]["humidity"]
+        label = "내일" if day_offset == 1 else f"{day_offset}일 후"
+        return f"{city} {label}({target_date}) 날씨: {desc}, 기온 {temp}°C, 습도 {humidity}%"
     except Exception as e:
-        return f"날씨 조회 실패: {e}"
+        return f"날씨 예보 조회 실패: {e}"
 
 
 tavily = TavilySearch(max_results=3)
@@ -304,7 +345,9 @@ def tool_agent_node(state: GraphState) -> dict:
         "날씨를 조회하거나 식당을 추천하세요. 되묻지 말고 바로 도구를 호출하세요.\n\n"
         "weather_search를 호출할 때는 도시명을 반드시 영문으로 변환해서 넘기세요 "
         "(예: 청주 -> Cheongju, 서울 -> Seoul, 충북대학교 -> Cheongju). "
-        "한글 도시명을 그대로 넘기면 날씨 조회가 실패합니다.\n\n"
+        "한글 도시명을 그대로 넘기면 날씨 조회가 실패합니다. "
+        "'오늘' 날씨는 day_offset=0(기본값), '내일'은 day_offset=1, '모레'는 day_offset=2로 "
+        "반드시 지정해서 호출하세요. 특정 날짜를 언급하지 않으면 오늘(day_offset=0)로 간주하세요.\n\n"
         "특정 학사일정까지 남은 기간을 물으면(예: '기말고사까지 며칠 남았어?'), "
         "먼저 rag_search로 해당 일정의 날짜를 찾은 뒤, 그 날짜(YYYY-MM-DD 형식으로 변환)를 "
         "dday_calculator에 넘겨 정확히 계산하세요. 날짜 계산은 반드시 dday_calculator에 위임하고 "
