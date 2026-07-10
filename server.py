@@ -241,7 +241,7 @@ DDAY_KEYWORDS = ["며칠", "디데이", "d-day", "D-day", "얼마나 남았"]
 class GraphState(TypedDict):
     messages: Annotated[list, add_messages]
     category: str            # "academic" | "restaurant" | "realtime"
-    current_query: str       # 이번 턴의 사용자 질문 (누적된 messages와 별개로 보관)
+    current_query: str       # 이번 턴의 사용자 질문 (누적된 messages와 별개로 보관!)
     rag_relevant: bool
     rag_sources: list
     retry_count: int

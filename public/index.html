@@ -112,14 +112,6 @@
         </div>
     </header>
     <main class="chat-container px-6">
-        <div class="hidden py-4 flex flex-col items-center gap-2" id="sse-status">
-            <div class="w-48 h-1 rounded-full overflow-hidden" style="background:#e4e2e2;">
-                <div class="h-full" id="sse-bar"
-                    style="background:linear-gradient(to right,#ade1fe,#9d94ff); width:60%;"></div>
-            </div>
-            <span class="italic" id="status-text"
-                style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#787583;">질문 분류 중...</span>
-        </div>
         <div class="flex-1 overflow-y-auto scroll-hide py-2 space-y-6" id="message-flow">
             <div class="flex flex-col items-start max-w-[95%]">
                 <div class="p-4 rounded-xl shadow-sm border ai-bubble-border"
@@ -127,6 +119,14 @@
                     <p style="font-size:16px;">안녕하세요! 캠퍼스 AI 에이전트입니다. 오늘의 날씨, 학사 일정, 학교 근처 맛집 등에 대해 무엇이든 물어보세요.</p>
                 </div>
             </div>
+        </div>
+        <div class="hidden py-3 flex flex-col items-center gap-2" id="sse-status">
+            <div class="w-48 h-1 rounded-full overflow-hidden" style="background:#e4e2e2;">
+                <div class="h-full" id="sse-bar"
+                    style="background:linear-gradient(to right,#ade1fe,#9d94ff); width:60%;"></div>
+            </div>
+            <span class="italic" id="status-text"
+                style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#787583;">질문 분류 중...</span>
         </div>
         <div class="pb-6 pt-2" style="background:linear-gradient(to top,#fbf9f8,#fbf9f8,transparent);">
             <div class="flex flex-wrap gap-2 mb-4 justify-center">
